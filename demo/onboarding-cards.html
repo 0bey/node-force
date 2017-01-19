@@ -1,0 +1,259 @@
+
+<link rel="import" href="elements.html">
+<link rel="import" href="shared-styles.html">
+
+<!--
+
+An element to hold form cards of a given type.
+Facilitates the data manipulation and submission of an array of such object cards. -->
+
+<dom-module id="onboarding-cards">
+
+  <template>
+
+    <style include="shared-styles">
+
+      :host {
+
+        display: block;
+        padding: 10px;
+
+      }
+
+      paper-button {
+
+        display: block;
+        background: var(--enoc-product-light-grey);
+        color: var(--enoc-corporate-blue);
+
+      }
+
+      paper-menu {
+
+        display: block;
+
+      }
+
+      paper-menu-button {
+
+        margin: auto;
+
+      }
+
+      .tool-container {
+        @apply(--layout-vertical);
+        @apply(--layout-center);
+      }
+
+      .button-container {
+        height: 25%;
+        @apply(--layout-horizontal);
+      }
+
+    </style>
+
+    <!-- Content -->
+    <content></content>
+
+    <div class="tool-container">
+
+      <!-- Buttons for expandable version -->
+      <template is="dom-if" if="{{expandable}}">
+
+        <div class="button-container">
+
+          <!-- Add Button w/ Menu -->
+          <paper-menu-button>
+
+            <paper-button class="dropdown-trigger" raised>
+              <iron-icon icon="icons:add"></iron-icon>
+              Add
+            </paper-button>
+
+            <paper-menu class="dropdown-content" id="addMenu">
+
+              <template is="dom-repeat" items="{{altDataObjects}}">
+
+                <paper-button on-click="_addCard">{{item.displayName}}</paper-button>
+
+              </template>
+
+            </paper-menu>
+
+          </paper-menu-button>
+
+          <!-- Remove Button w/ Menu -->
+          <paper-menu-button>
+
+            <paper-button class="dropdown-trigger" raised>
+
+              <iron-icon icon="icons:clear"></iron-icon>
+              Remove
+
+            </paper-button>
+
+            <paper-menu class="dropdown-content" id="removeMenu">
+              <template is="dom-repeat" items="{{cardDataObjects}}">
+
+                <paper-button on-click="_remCard">{{_getItemDisplayName(item)}}</paper-button>
+
+              </template>
+            </paper-menu>
+
+          </paper-menu-button>
+
+        </div>
+
+      </template>
+
+    </div>
+
+  </template>
+
+  <script>
+
+    Polymer({
+
+      is: 'onboarding-cards',
+
+      properties: {
+        cardObjectName: String,
+
+        expandable: Boolean,      /* Add and Remove cards ? */
+
+        validatable: Boolean,     /* Validate on form submit ? */
+
+        siteId: String,           /* Site Id (TODO: needed?)*/
+
+        cardElementName: String,  /* Name of elements in content */
+
+        cardType: String,         /* Name of card */
+
+        altDataObjects: Array,    /* Data objects for add */
+
+        cardDataObjects: {        /* Data objects for each card */
+          type: Array,
+          notify: true,
+          value: function() {
+            return [];
+          }
+        }
+
+      },
+
+      behaviors:[
+        Polymer.NeonAnimatableBehavior
+      ],
+
+      /** Validate all cards within the container.
+      *
+      * @return{Boolean} isValid - if all cards were valid
+      */
+      validate: function() {
+
+        var isValid = true;
+
+        // validate all cards TODO: do we want to validate ALL, or stop at first invalid?
+        if( this.validatable ){
+          Polymer.dom(this.root).querySelectorAll(this.cardElementName).forEach(function(element, index, array){
+
+            if( !element.validate() ) isValid = false;
+
+          });
+        }
+
+        return isValid;
+      },
+
+      /** Generate a blank data object of the card element type **
+      * @private
+      * @return{object} blankCardData - the boilerplate object
+      */
+      _genCardData: function(existingObjectIndex){
+
+        var addedCardData = {attributes:{type:this.cardObjectName}, Id:''};
+
+        switch(this.cardElementName){
+
+          case "contact-details-card":
+
+            // get data if contact exists
+            if(existingObjectIndex) addedCardData = this.get(['altDataObjects',existingObjectIndex]);
+
+            // add boilerplate fields
+            addedCardData.role = {attributes:{type:"Contact_Role__c"}, Id: "", Site__c: this.siteId};
+            addedCardData.MailingCountry = 'United States';
+
+            break;
+
+          case "meter-details-card":
+
+            // add record type to specify gen vs. meter (TODO: vs. pump vs. main vs. ... )
+            addedCardData.Site__c = this.siteId;
+            addedCardData.RecordTypeId = existingObjectIndex ? '012a0000001NSUTAA4' : '012a0000001NSUOAA4';
+
+            break;
+
+          default:
+
+        }
+
+        return addedCardData;
+
+      },
+
+      /** Add a card element by adding data object corresponding to a clicked menu item.
+      * @private
+      */
+      _addCard: function(){
+
+        // index of selected item
+        var existingObjectIndex = Polymer.dom(this.root).querySelector('#addMenu').selected;
+
+        // data of new card
+        var addedCardData = this._genCardData( existingObjectIndex );
+
+        if(!this.cardDataObjects.length){
+          // TODO: The case where this is first of type=cardType,
+          //        should add schema to progressSchema - maybe not here.
+        }
+
+        // create card by pushing data object
+        this.push('cardDataObjects', addedCardData);
+
+      },
+
+      /** Remove a card element by removing data object corresponding to a clicked menu item.
+      * @private
+      */
+      _remCard: function(){
+
+        // index of selected menu item
+        var menuIndex = Polymer.dom(this.root).querySelector('#removeMenu').selected;
+
+        // data of card object with that index
+        var cardObjectData = this.get(['cardDataObjects', menuIndex]);
+
+        // fire event for app to handle any sf destroys
+        var destroyedObjectType = (this.cardElementName === "contact-details-card") ? cardObjectData.role.attributes.type : cardObjectData.attributes.type;
+        this.fire('card-removed',  {objectName: destroyedObjectType, objectData: cardObjectData});
+
+        // remove card by removing data object
+        this.splice('cardDataObjects', menuIndex, 1);
+
+      },
+
+      /** Generate the name to display in add & remove menu.
+      *
+      * @param{Object} item - ugly item in menu
+      * @return{string} displayName - pretty name to display in menu entry
+      */
+      _getItemDisplayName: function(item) {
+
+        return item.displayName || item.Name;
+
+      }
+
+    });
+  </script>
+</dom-module>

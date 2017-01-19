@@ -1,0 +1,55 @@
+<!--================================->
+@license:
+
+  Copyright (c) 2016 EnerNOC DR-Dev
+
+<!-================================-->
+
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../bower_components/gold-email-input/gold-email-input.html">
+
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="onboarding-home">
+  <template>
+    <style include="shared-styles">
+
+      :host {
+        display: block;
+
+        padding: 10px;
+      }
+
+      paper-button {
+        background-color: var(--enoc-product-light-gray);
+        border: 1px solid var(--enoc-corporate-blue);
+      }
+
+    </style>
+
+
+    <!-- Home Page -->
+    <div class="card">
+
+      <h1>Welcome to the EnerNOC Onboarding Portal</h1>
+      <p>Confirm your information,
+        <p>Set up your Energy Reduction Plan,
+          <p>And learn about what Demand Response will be for you.
+
+    </div>
+
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'onboarding-home'
+
+
+
+    });
+  </script>
+</dom-module>
