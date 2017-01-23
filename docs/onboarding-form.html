@@ -1,0 +1,298 @@
+<!--================================->
+@license:
+
+  Copyright (c) 2016 EnerNOC DR-Dev
+
+<!-================================-->
+
+<!-- Elements --> <link rel="import" href="elements.html">
+<!-- Style --> <link rel="import" href="shared-styles.html">
+
+<dom-module id="onboarding-form">
+  <template>
+    <style include="shared-styles">
+
+      :host {
+
+        display: block;
+        padding: 10px;
+
+      }
+
+      .form-button-bar {
+
+        margin: auto;
+        align-content: center;
+
+      }
+
+      neon-animated-pages: {
+
+        padding: 16px 16px;
+
+      }
+
+      .meter-guide {
+        background-color: var(--enoc-product-purple);
+        color: white;
+      }
+
+      .gen-guide {
+        color: white;
+        background-color: var(--enoc-product-purple);
+      }
+
+    </style>
+
+    <!-- Form Sections -->
+    <neon-animated-pages id="sections"
+       attr-for-selected="name"
+       selected="[[currentFormSection]]"
+       entry-animation='fade-in-animation'
+       exit-animation='fade-out-animation'>
+
+     <!-- Guide -->
+     <onboarding-cards id="guideContainer" name="guide">
+
+       <paper-material class="card" elevation="1">
+         <h4>This is the onboarding form for {{siteName}}</h4>
+         <br>
+         <p>Navigate the tabs above to help us learn about your site, contacts, equipment and plan for participating in Demand Response</p>
+       </paper-material>
+
+     </onboarding-cards>
+
+     <!-- Site -->
+     <onboarding-cards id="siteContainer"
+        name="siteDetails"
+        card-type="siteDetails"
+        card-object-name="Site__c"
+        card-element-name="site-details-card"
+        validatable>
+
+        <site-details-card id="{{details.siteDetails.Id}}"
+                             site-id="{{siteId}}"
+                             details="{{details.siteDetails}}"></site-details-card>
+
+     </onboarding-cards>
+
+     <!-- Contacts -->
+     <onboarding-cards id="contactContainer"
+        name="contacts"
+        card-type="contacts"
+        site-id="{{details.details.Id}}"
+        card-object-name="Contact"
+        card-element-name="contact-details-card"
+        alt-data-objects="{{accountContacts}}"
+        card-data-objects="{{details.contacts}}"
+        expandable validatable>
+
+       <template is="dom-repeat" items="{{details.contacts}}">
+
+         <contact-details-card id="{{item.Id}}"
+                               details="{{item}}"></contact-details-card>
+
+       </template>
+
+     </onboarding-cards>
+
+     <!-- Equipment -->
+     <div name="equipment">
+
+       <!-- Generator Objects -->
+       <onboarding-cards id="genContainer"
+       name="generators"
+       site-id="{{details.details.Id}}"
+       card-type="equipment"
+       card-object-name="Equipment__c"
+       card-element-name="generator-details-card"
+       card-data-objects="{{details.equipment}}"
+       validatable>
+
+       <paper-material class="gen-guide card" elevation="1">
+         <h2>Generators</h2>
+         <p>
+           If you intend to use a back-up generator for DR participation, please provide us with information about the specific generator.
+           To add new generator information, select 'New Generator' from the add menu at the bottom of this section.
+         </p>
+       </paper-material>
+
+       <template is="dom-repeat" items="{{details.equipment}}" filter="_isGenerator">
+
+         <generator-details-card id="{{item.Id}}" details="{{item}}"></generator-details-card>
+
+       </template>
+     </onboarding-cards>
+      <!-- Meter Objects -->
+      <onboarding-cards id="meterContainer"
+       name="meters"
+       site-id="{{details.details.Id}}"
+       card-type="equipment"
+       card-object-name="Equipment__c"
+       card-element-name="meter-details-card"
+       card-data-objects="{{details.equipment}}"
+       alt-data-objects="{{equipmentOptions}}"
+       expandable validatable>
+
+        <paper-material class="meter-guide card" elevation="1">
+         <h2>Meters</h2>
+         <p>
+           Your meter information is an important requirement for your participation in Demand Response.
+           To provide us with new meter information, select 'New Meter' from the add menu at the bottom of this section.
+         </p>
+        </paper-material>
+
+        <template is="dom-repeat" items="{{details.equipment}}" filter="_isMeter">
+
+         <meter-details-card id="{{item.Id}}" details="{{item}}"></meter-details-card>
+
+        </template>
+
+      </onboarding-cards>
+
+
+     </div>
+
+     <!-- Participation -->
+     <onboarding-cards id="participationContainer" name="participation">
+
+       <!-- Notification Configuration -->
+       <notification-config-card id="notify-config" contact-data="{{details.contacts}}"></notification-config-card>
+
+       <!-- Energy Reduction Plan Configuration -->
+       <erp-config-card id="erp-config" erp-full-text="{{details.siteDetails.Curtailment_Plan__c}}" customer-industry="[[details.siteDetails.Industry__c]]"></erp-config-card>
+
+     </onboarding-cards>
+
+    </neon-animated-pages>
+
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'onboarding-form',
+
+      properties: {
+
+        siteId: String,              /* Id of site object       */
+
+        siteName: String,            /* Name of site            */
+
+        currentFormSection: String,  /* Form section visible    */
+
+        accountContacts: Array,      /* All contacts on account */
+
+        genRecordTypeId: {
+          type: Array,
+          value: function () {
+
+            return ['012a0000001NSUOAA4', '012a0000001NSUYAA4']; /* Reference to gen and main RecordType */
+
+          }
+        },
+
+        meterRecordTypeId: {
+          type: Array,
+          value: function () {
+
+            return ['012a0000001NSUTAA4']; /* Reference to meter RecordType */
+
+          }
+        },
+
+        equipmentOptions: {
+          type: Array,
+          value: function () {
+            return [
+              {displayName : 'New Generator'},
+              {displayName : 'New Meter'}
+            ];
+          }
+        },
+
+        /* Form Details */
+        details: {
+
+          type: Object,
+          notify: true,
+          value: function() {
+            return {};
+          }
+
+        }
+
+      },
+
+      /*
+       ==============================
+        Functions of onboarding-form
+       ============================== */
+
+      /** Determine if the form has valid inputs by running each section's validate method.
+      *
+      * @return{Boolean} isValidForm - whether validate method from every section returned true
+      */
+      validate: function() {
+
+        console.log('[FORM] submitting ...  ');
+
+        // Validate all containers
+        var isValidForm = true;
+        Polymer.dom(this.root).querySelectorAll('onboarding-cards').forEach( function(element, index, array){
+
+          if( !element.validate() ) isValidForm = false;
+
+        });
+
+        // Front end data trimming TODO: get rid of
+        if( isValidForm ){
+
+          /* Ensure only sf objects are in details object */
+          this.details.siteDetails = [this.details.siteDetails]; //TODO: backend expecting array
+          delete this.details.details;
+
+        }
+
+        return isValidForm;
+
+      },
+
+      /** Determine if an equipment object is a Generator.
+      * @param{Object} eqItem - Equipment data object
+      * @return{Boolean} isMeter - Whether data object is generator
+      */
+      _isGenerator: function(eqItem) {
+        /*
+        console.log( '===============================================================');
+        console.log( 'isGen -> ' + JSON.stringify(eqItem.RecordTypeId));
+        console.log( 'isGen -> ' + JSON.stringify(eqItem));
+        console.log( 'isGen -> ' + (eqItem.RecordTypeId && (this.genRecordTypeId.indexOf(eqItem.RecordTypeId) !== -1)));
+        console.log( '===============================================================');
+        */
+
+        return (eqItem.RecordTypeId && (this.genRecordTypeId.indexOf(eqItem.RecordTypeId) !== -1));
+
+      },
+
+      /** Determine if an equipment object is a Meter.
+      * @param{Object} eqItem - Equipment data object
+      * @return{Boolean} isMeter - Whether data object is meter
+      */
+      _isMeter: function(eqItem) {
+        /*
+        console.log( '===============================================================');
+        console.log( 'isMeter -> ' + JSON.stringify(eqItem.RecordTypeId));
+        console.log( 'isMeter -> ' + JSON.stringify(eqItem));
+        console.log( 'isMeter -> ' + (eqItem.RecordTypeId && (this.meterRecordTypeId.indexOf(eqItem.RecordTypeId) !== -1)));
+        console.log( '===============================================================');
+        */
+
+        return (eqItem.RecordTypeId && (this.meterRecordTypeId.indexOf(eqItem.RecordTypeId) !== -1));
+
+      }
+
+
+    });
+  </script>
+</dom-module>

@@ -1,0 +1,109 @@
+<link rel="import" href="../elements.html">
+<dom-module id="registration-details-card">
+  <template>
+
+    <style include="shared-styles"></style>
+
+    <!-- HTML: local dom -->
+    <div class="card">
+      <form is="iron-form" id="form" method="post" action="/portal/registration">
+
+        <h2>{{details.Title}}</h2>
+
+        <paper-dropdown-menu name="load_type" label="Load Type" value="{{details.Load_Type}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item>loadtype 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <br>
+
+        <paper-dropdown-menu name="matering_point" label="Metering Point" value="{{details.Metering_Point}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item> 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-input name="enernoc_platform_display" label="Enernoc Platform Display" value="{{details.Enernoc_Platform_display}}" required></paper-input>
+        <paper-input name="energy_reduction_plan" label="Energy Reduction Plan" value="{{details.Energy_Reduction_Plan}}" required></paper-input>
+        <paper-input name="service_account" label="Service Account" type=number value="{{details.Service_Account}}" required></paper-input>
+
+        <paper-checkbox id="pre_authorized">
+          Pre Authorized
+          <span class="subtitle">
+            Check this box to be pre-authorized.
+          </span>
+        </paper-checkbox>
+
+        <br><br>
+
+      </form>
+    </div>
+
+    <br><br>
+
+
+  </template>
+
+  <script>
+
+    /*JS: polymer call */
+    Polymer({
+
+      /* JS: element prototype */
+
+      is: 'registration-details-card',
+
+      properties: {
+
+        /* Set Properties */
+
+        /* Data Object */
+        details: {
+
+          type: Object,
+          notify: true
+
+        },
+
+        /* Whether Primary */
+        isPrimary: {
+
+          type: Boolean,
+          notify: true,
+          value: false
+
+        }
+
+      },
+
+      /* Set listeners */
+      listeners: {
+
+      },
+
+      /* Define functions */
+      ready: function() {
+
+
+      },
+
+      /* Submit Contact Data */
+      submit: function() {
+
+        this.$.form.submit();
+
+      },
+
+      _handlePrimaryChange: function(event) {
+
+        this.isPrimary = !this.isPrimary;
+
+        var primary = this.isPrimary;
+        this.submission = primary.toString();
+      }
+
+    });
+
+  </script>
+</dom-module>

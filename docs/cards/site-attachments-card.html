@@ -1,0 +1,61 @@
+<!--================================->
+@license:
+
+  Copyright (c) 2016 EnerNOC DR-Dev
+
+<!-================================-->
+
+<!-- Elements --> <link rel="import" href="../elements.html">
+<!-- Style --> <link rel="import" href="../shared-styles.html">
+
+<dom-module id="site-attachments-card">
+  <template>
+
+    <style include="shared-styles"></style>
+
+    <vaadin-upload
+    target="/portal/attachment"
+    headers='{
+      "Authorization" : "{{token}}",
+      "submission-object" : "Attachment",
+      "submission-method" : "create",
+      "parentid" : "{{siteId}}"
+    }'>
+      <div class="drop-label">
+        <iron-icon icon="file-upload"></iron-icon>
+          Accepts up to 3PDF files, up to 1MB each
+      </div>
+    </vaadin-upload>
+
+    <br><br>
+
+
+  </template>
+
+  <script>
+
+    /*JS: polymer call */
+    Polymer({
+
+      /* JS: element prototype */
+
+      is: 'site-attachments-card',
+
+      properties: {
+        siteId: {
+          type: String,
+          notify: true
+        },
+
+        token: {
+          type: String,
+          notify: true
+        }
+      }
+
+
+
+    });
+
+  </script>
+</dom-module>

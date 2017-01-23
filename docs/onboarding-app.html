@@ -1,0 +1,618 @@
+<!--================================->
+@license:
+  Copyright (c) 2016 EnerNOC DR-Dev
+<!-================================-->
+
+<link rel="import" href="elements.html">
+<link rel="import" href="shared-styles.html">
+
+<dom-module id="onboarding-app">
+  <template>
+    <style include="shared-styles">
+
+      :host{
+        --toast-color: green;
+      }
+
+      app-header {
+        color: #fff;
+        --app-header-background-front-layer: {
+          background-color: var(--enoc-corporate-blue);
+        };
+        --app-header-background-rear-layer: {
+          background-color: var(--enoc-product-light-blue);
+        };
+      }
+
+      [main-title] {
+        font-size: 1.5em;
+      }
+
+      [condensed-title] {
+        color: var(--enoc-product-light-gray);
+      }
+
+      #sidebar-menu-title {
+        width: 175px;
+        height: 75px;
+      }
+
+      .sidebar-menu {
+        align-items: center;
+        height: 75px;
+      }
+
+      .drawer-list {
+        margin: 0 20px;
+      }
+
+      .drawer-list a {
+        display: block;
+        padding: 0 16px;
+        text-decoration: none;
+        color: var(--app-secondary-color);
+        line-height: 40px;
+      }
+
+      .drawer-list a.iron-selected {
+        color: black;
+        font-weight: bold;
+      }
+
+      .tab-bar {
+        height: 50px;
+        background-color: var(--enoc-product-light-blue);
+      }
+
+      paper-icon-button {
+        color: var(--enoc-product-light-gray);
+        --paper-icon-button-hover: {
+          color: var(--enoc-product-gold);
+        };
+      }
+
+      onboarding-progress-tabs {
+        align-self: center;
+        height: 100%;
+        width: 100%;
+      }
+
+    </style>
+
+    <!-- Communicate w/ server.js -->
+    <iron-ajax id="ajax"
+              url="/portal"
+        handle-as="json"
+           method="get"
+      on-response="_handleAJAXResponse"></iron-ajax>
+
+    <!-- Client-Side Routing -->
+
+    <!-- URL location -->
+    <app-location route="{{route}}"></app-location>
+
+    <!-- Layer 1: static pages -->
+    <app-route
+        route="{{route}}"
+        pattern="/:page"
+        data="{{routeData}}"
+        tail="{{subroute}}">
+    </app-route>
+
+    <!-- Layer 2: dynamic pages (form by siteId) -->
+    <app-route
+        route="{{subroute}}"
+        pattern="/:siteid"
+        data="{{subrouteData}}">
+    </app-route>
+
+    <app-drawer-layout id="drawerLayout" fullbleed>
+
+      <!-- Drawer content -->
+      <app-drawer id="app_drawer" hidden>
+
+        <paper-material class="sidebar-menu" elevation="0">
+          <paper-item center-justified>
+
+            <iron-image id="sidebar-menu-title" src="../images/EnerNOClogo_blue.png" preload sizing="contain"></iron-image>
+
+          </paper-item>
+        </paper-material>
+
+        <iron-selector selected="[[page]]" attr-for-selected="path" class="drawer-list" role="navigation">
+
+          <!-- Unauthorized Links  -->
+
+          <!-- Authorized Links -->
+          <template is="dom-if" if="{{authorized}}">
+
+            <!-- Home Page Link -->
+            <a path="home" href="/home">Home</a>
+
+            <iron-selector selected="[[formId]]" attr-for-selected="path">
+
+              <!-- Site Form Page Links -->
+              <template is="dom-repeat" id="siteSection" items="{{sites}}">
+
+                <a path="{{item.details.Id}}" href="/form/{{item.details.Id}}">{{item.details.Name}}</a>
+
+              </template>
+
+            </iron-selector>
+
+          </template>
+
+        </iron-selector>
+
+      </app-drawer>
+
+      <!-- Main content -->
+      <app-header-layout id="headerLayout">
+
+        <app-header condenses fixed shadow effects="waterfall blend-background parallax-background resize-title blend-background">
+
+          <app-toolbar class="condensed-toolbar">
+
+            <paper-icon-button icon="menu" drawer-toggle></paper-icon-button>
+
+            <div condensed-title>{{_computePageTitle(formId)}}</div>
+
+            <template is="dom-if" if="{{authorized}}">
+
+              <paper-icon-item>
+                <paper-icon-button icon="send" item-icon on-click="_submit"></paper-icon-button>
+                Submit
+              </paper-icon-item>
+
+              <paper-icon-item>
+                <paper-icon-button icon="save" item-icon on-click="_save"></paper-icon-button>
+                Save for Later
+              </paper-icon-item>
+
+            </template>
+
+          </app-toolbar>
+
+          <app-toolbar></app-toolbar>
+
+          <app-toolbar class="main-toolbar">
+
+           <div main-title>Onboarding Portal</div>
+
+           <template is="dom-if" if="{{!authorized}}">
+
+             <paper-icon-item>
+               Log In
+               <paper-icon-button icon="chevron-right" item-icon on-click="_handleAuthResponse"></paper-icon-button>
+             </paper-icon-item>
+
+           </template>
+
+          </app-toolbar>
+
+          <template is="dom-if" if="{{authorized}}">
+            <app-toolbar class="tab-bar" sticky>
+
+              <onboarding-progress-tabs current-form-section="{{currentFormSection}}" account-name="{{accountName}}" form-key="{{formId}}" form-data="{{sites}}" progress-schema="{{progressSchema}}"></onboarding-progress-tabs>
+
+            </app-toolbar>
+          </template>
+
+        </app-header>
+
+        <iron-pages id="iron_pages"
+            selected="[[page]]"
+            attr-for-selected="path"
+            fallback-selection="view404"
+            role="main">
+
+          <!-- 404 Page -->
+          <onboarding-view404 name="view404"></onboarding-view404>
+
+          <!-- Log In Page -->
+          <onboarding-login id="login" path="login"></onboarding-login>
+
+          <!-- Home Page -->
+          <onboarding-home id="home" path="home"></onboarding-home>
+
+          <!-- Test Page : REMOVE BEFORE PRODUCTION -->
+          <onboarding-test id="test" path="test"></onboarding-test>
+
+          <div path="form">
+            <iron-pages selected="[[formId]]" attr-for-selected="path">
+
+              <!-- Site Pages -->
+              <template is="dom-repeat" items="{{sites}}">
+
+                <onboarding-form
+                  current-form-section="{{currentFormSection}}"
+                  path="{{item.details.Id}}"
+                  token="{{token}}"
+                  site-id="{{item.details.Id}}"
+                  site-name="{{item.details.Name}}"
+                  details="{{item}}"
+                  account-contacts="[[accountContacts]]">
+                </onboarding-form>
+
+              </template>
+
+            </iron-pages>
+          </div>
+        </iron-pages>
+
+      </app-header-layout>
+    </app-drawer-layout>
+
+    <div id ="center" style="position:fixed;top:50%;left:50%">
+
+      <paper-spinner id="login_spinner" alt="Logging In..."></paper-spinner>
+
+    </div>
+
+    <paper-toast id="toast"></paper-toast>
+
+  </template>
+
+  <script>
+    Polymer({
+      is: 'onboarding-app',
+      properties: {
+
+        /* Current Page */
+        page: {
+          type: String,
+          reflectToAttribute: true,
+          observer: '_pageChanged'
+        },
+
+        /* Current Form */
+        formId: {
+          type: String,
+          notify: true,
+          reflectToAttribute: true
+
+        },
+
+        /* Current Form Section */
+        currentFormSection: {
+          type: String,
+          notify: true,
+          observer: '_formSectionChanged'
+        },
+
+        /* Current Token */
+        token: {
+          type: String,
+          notify: true,
+          value: ""
+        },
+
+        /* Authorization Status */
+        authorized: {
+          type: Boolean,
+          notify: true,
+          value: false
+        },
+
+        /* Account Name */
+        accountName: {
+          type: String,
+          notify: true,
+          value: "Your Account"
+        },
+
+        /* Site List*/
+        sites: {
+          type: Array,
+          notify: true,
+          value: function(){
+            return [{siteDetails: {Id:'demoSite1', Name: 'Demo Site'}, details: {Name: 'DemoSite', Id: 'demoSite1'}, contacts: [{role:{Id: 'demoContactRole1'}, Id: 'demoContact1', displayName: 'Richard Feynman', FirstName: 'Richard', LastName: 'Feynman'}], equipment:[] }];
+          }
+        },
+
+        /* Account Contact List */
+        accountContacts : {
+          type: Array,
+          notify: true,
+          reflectToAttribute: true,
+          value: function(){
+            return [{displayName: 'New Contact', Id: ''}, {displayName: 'Richard Feynman', FirstName: 'Richard', LastName: 'Feynman'}, {displayName: 'Nikola Tesla', FirstName: 'Nikola', LastName: 'Tesla'} ];
+          }
+        },
+
+        progressSchema: {
+          type: Object,
+          notify: true,
+          value: function(){
+            return {
+              ignored: ['Address_Line_2__c', 'Title']
+            };
+          }
+        },
+
+        schematized: Boolean
+
+      },
+
+      /* Listen for events */
+      listeners: {
+        'login': '_handleAuthResponse',
+        'card-removed': '_destroy',
+        'iron-form-invalid': '_invalidCardAlert',
+        'initialize-card-schema' : '_updateProgressSchema'
+      },
+
+      /* Observe property changes */
+      observers: [
+        '_routeChanged(routeData.page)',
+        '_subrouteChanged(subrouteData.siteid)'
+      ],
+
+
+      /* ==================
+         Routing Functions
+         ================== */
+      _routeChanged: function(page) {
+        this.formId = "";             // clear form
+        this.page = page || 'login';  // set page
+      },
+
+      _subrouteChanged: function(siteid){
+        this.formId = siteid; // set form
+        this.$.headerLayout.resetLayout();
+      },
+
+      _pageChanged: function(page) {
+        // Load page import on demand. Show 404 page if fails
+        var resolvedPageUrl = this.resolveUrl('onboarding-' + page + '.html');
+        this.importHref(resolvedPageUrl, null, this._showPage404, true);
+      },
+
+      _formSectionChanged(newValue, oldValue){
+        if( !oldValue ){
+
+          // setting for first time
+          this.$.headerLayout.resetLayout();
+
+        }else if( (newValue !== "guide") && !this.schematized ){
+
+          this._initializeProgressSchema();
+          this.schematized = true;
+
+        }
+
+      },
+
+      _showPage404: function() {
+        this.page = 'login';
+      },
+
+      _computePageTitle: function(formId) {
+        var pageTitle = 'Home';
+
+        this.sites.forEach(function(element,index,array){
+          if(element.siteDetails.Id === formId) pageTitle = element.details.Name;
+        });
+
+        return pageTitle;
+      },
+
+      /* Authorize user */
+      _authorize: function( e ) {
+
+        // toggle load styles ON
+        this._toggleLoadStyles();
+
+        this.$$('onboarding-login').$.form.submit();
+
+      },
+
+      /* Load user data */
+      _load: function() {
+
+        // toggle load styles
+        this._toggleLoadStyles();
+
+        // configure ajax
+        this.$.ajax.headers = { Authorization : this.token };
+
+        // generate ajax
+        this.$.ajax.generateRequest();
+
+      },
+
+      /* Save user data */
+      _save: function( e ) {
+        this._toast('Sorry, save is not yet supported', 'info');
+      },
+
+      /* Submit user data */
+      _submit: function( e ) {
+
+        var validForms = Polymer.dom(this.root).querySelectorAll('onboarding-form').filter( function(element, index, array) {
+          return element.validate();
+        }.bind(this));
+
+        for(var f = 0; f < validForms.length; f++){
+          this._sendAJAXRequest("POST", "batch", "/portal", validForms[f].details);
+        }
+
+        //toggle load styles ON
+        this._toggleLoadStyles();
+
+      },
+
+      /* Make any SF modifications when a card is destroyed */
+      _destroy: function( e ) {
+
+        if( e.detail.objectData.Id ){
+
+          // toggle load styles ON
+
+          // Destroy Site Contact Role
+          this._sendAJAXRequest("POST", "destroy", "/portal", { objectName: e.detail.objectName, objectData: { Id: e.detail.objectData.Id }});
+
+        }
+      },
+
+      _invalidCardAlert: function(e){
+
+        this._toast("Invalid Form", "warn");
+
+      },
+
+      /* Make AJAX request to server      */
+      _sendAJAXRequest: function(httpMethod, submitType, endpoint, objectData) {
+
+        // set AJAX destination
+        this.$.ajax.url = endpoint;
+
+        // set AJAX http method
+        this.$.ajax.method = httpMethod;
+
+        // add AJAX headers
+        this.$.ajax.headers = {
+          Authorization : this.token,
+          'content-type' : "application/json",
+          'submission-type' : submitType };
+
+        // add AJAX body
+        this.$.ajax.body = objectData;
+
+        // make AJAX request
+        console.log( '[APP]-> Submitting Body : ' + JSON.stringify(this.$.ajax.body));
+        this.$.ajax.generateRequest();
+
+      },
+
+      /**
+       * Handle response to authorization request
+       */
+      _handleAuthResponse: function(e) {
+
+        /* demo version */
+        this._toggleLoadStyles();
+
+        setTimeout(function(){
+
+          this.authorized = true;
+          this.page = 'home';
+
+          this.$.app_drawer.hidden = false;
+
+          this._toggleLoadStyles();
+
+          this.$.drawerLayout.resetLayout();
+          this.$.headerLayout.resetLayout();
+
+        }.bind(this), 1500);
+
+      },
+
+      _handleAJAXResponse: function(request) {
+
+        if(request.detail.response.success){
+
+          if(!request.detail.response.isSubmission){
+
+            // set properties
+            this.accountContacts = this.accountContacts.concat(request.detail.response.account.roster);
+            this.sites = request.detail.response.account.sites;
+            this.accountName = request.detail.response.account.Name;
+
+            // show the app drawer after user is authenticated their data is pulled in
+            this.$.app_drawer.hidden = false;
+            this.$.drawerLayout.resetLayout();
+            this.$.headerLayout.resetLayout();
+
+          }
+
+          this._toast(request.detail.response.msg, 'info');
+
+        }else{
+
+          // invalid token
+          this.authorized = false;
+          this.page = 'login';
+          this._toast(request.detail.response.msg, 'warning');
+
+        }
+
+        // toggle load styles OFF
+        if(this.$.login_spinner.active) this._toggleLoadStyles();
+
+      },
+
+      _test: function() {
+        this.page = 'test';
+      },
+
+      _toggleLoadStyles: function(){
+        console.log('[/|/|] -- Toggling load styles.');
+
+        this.$.login_spinner.active = !this.$.login_spinner.active;
+
+        return this.$.login_spinner.active ? this.$.iron_pages.classList.add('blur') : this.$.iron_pages.classList.remove('blur');
+
+      },
+
+      _toast: function(message, level){
+
+        // style
+        this.$.toast.classList.remove("info","warn","success","danger");
+        this.$.toast.classList.add(level);
+        this.updateStyles();
+
+        // show
+        this.$.toast.text = message;
+        this.$.toast.open();
+
+      },
+
+      /* Collect serialized form elements into a single object,
+       * acting as the schema for tracking progress.
+       */
+      _initializeProgressSchema: function(){
+
+        // Forms
+        var oForms = Polymer.dom(this.root).querySelectorAll('onboarding-form');
+        oForms.forEach( function(element, index, array){
+
+          // Containers
+          var containers = Polymer.dom(element.root).querySelectorAll('onboarding-cards');
+          containers.forEach( function(element, index, array){
+
+            // Card
+            if(element.validatable){
+              var card = Polymer.dom(element.parentNode).querySelector(element.cardElementName);
+              if(card) {
+
+                this.set(['progressSchema', element.cardType], card.$.form.serialize());
+
+              }else{
+
+                console.log(' NO CARD FOUND of type -> ' + element.cardElementName);
+
+              }
+
+            }
+
+          }.bind(this));
+        }.bind(this));
+      },
+
+      /** When onboarding-cards gets first card object, it fires an event to add it to
+      * the schema.
+      *
+      */
+      _updateProgressSchema: function(e) {
+
+        console.log(' pre schema ' + JSON.stringify(this.progressSchema));
+        if(!(e.detail.cardType in this.progressSchema)) this.set(['progressSchema', e.detail.cardType], e.detail.cardSchema);
+        console.log(' post schema ' + JSON.stringify(this.progressSchema));
+
+      }
+
+    });
+  </script>
+</dom-module>

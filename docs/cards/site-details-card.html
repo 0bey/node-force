@@ -1,0 +1,109 @@
+
+<!--===============================================->
+ | @license:  Copyright (c) 2016 DR/Dev            |
+<!================================================-->
+
+<!-- Elements --> <link rel="import" href="../elements.html">
+<!-- Style --> <link rel="import" href="../shared-styles.html">
+
+<dom-module id="site-details-card">
+
+  <template>
+    <!-- Native Style -->
+    <style include="shared-styles">
+      h4 {
+        color: var(--enoc-product-medium-gray);
+      }
+    </style>
+
+    <!-- Native Content -->
+
+    <!-- Present as Form -->
+    <div class="card">
+      <form is="iron-form" id="form" method="post" action="/portal/site">
+
+        <h2>{{details.Name}}</h2>
+
+        <paper-input name="Name" label="Site Name" value="{{details.Name}}" required></paper-input>
+
+        <paper-input name="Address_Line_1__c" label="Address Line 1" value="{{details.Address_Line_1__c}}" required></paper-input>
+
+        <paper-input name="Address_Line_2__c" label="Address Line 2" value="{{details.Address_Line_2__c}}"></paper-input>
+
+        <gold-zip-input name="Zip__c" label="Mailing Zip Code" value="{{details.Zip__c}}"></gold-zip-input>
+
+      </form>
+    </div>
+
+    <br><br>
+
+  </template>
+
+  <script>
+
+    /*JS: polymer call */
+    Polymer({
+
+      /* JS: element prototype */
+
+      is: 'site-details-card',
+
+      properties: {
+
+        /* Set Properties */
+
+        details: {
+          type: Object,
+          notify: true
+        }
+
+      },
+
+      /* Set listeners */
+      listeners: {
+
+          'primarybox.change': '_handlePrimaryChange'
+
+      },
+
+      observers: [
+        '_handleDetailsUpdate(details.*)'
+      ],
+
+
+      /* Define functions */
+      ready: function() {
+
+      },
+
+      /* Submit Site Data */
+      validate: function() {
+
+        console.log('[SITE-CARD] validating ... ');
+        var isValid = this.$.form.validate();
+        console.log('[SITE-CARD] validated = ' + isValid);
+
+        if(!isValid){
+          this.fire('invalid-card-alert', {card: 'Site Details'});
+        }
+
+        return isValid;
+      },
+
+      _handleDetailsUpdate: function(changeRecord) {
+
+        /* Progress tracking
+        if(changeRecord && !this.isTracked && (this.$.form.serialize() != {}) ){
+
+          this.fire('form-tracking-request', {card: 'siteDetails', schema: this.$.form.serialize()});
+          this.isTracked = true;
+
+        }*/
+
+      }
+
+    });
+
+  </script>
+
+</dom-module>

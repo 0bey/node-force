@@ -1,0 +1,201 @@
+<!--================================->
+@license:
+
+  Copyright (c) 2016 EnerNOC DR-Dev
+
+<!-================================-->
+
+<!-- Elements --> <link rel="import" href="../elements.html">
+<!-- Style --> <link rel="import" href="../shared-styles.html">
+
+<dom-module id="contact-details-card">
+  <template>
+
+    <style include="shared-styles">
+
+      h4 {
+        color: var(--enoc-product-medium-gray);
+      }
+
+    </style>
+
+    <!-- HTML: local dom -->
+    <div class="card">
+      <form is="iron-form"
+            id="form"
+            method="post"
+            action="/portal/contact"
+            on-iron-form-presubmit="_onFormPresubmit"
+            on-iron-form-response="_onFormResponse">
+
+        <h2>{{details.FirstName}} {{details.LastName}}</h2>
+
+        <paper-input name="FirstName" label="First Name" value="{{details.FirstName}}" required></paper-input>
+        <paper-input name="LastName" label="Last Name" value="{{details.LastName}}" required></paper-input>
+        <paper-input name="Title" label="Title" value="{{details.Title}}" required></paper-input>
+        <gold-phone-input name="HomePhone" label="Phone" value="{{details.HomePhone}}" auto-validate required></gold-phone-input>
+        <gold-phone-input name="MobilePhone" label="Mobile" value="{{details.MobilePhone}}" auto-validate required></gold-phone-input>
+        <gold-email-input name="Email" label="Email" value="{{details.Email}}" required></gold-email-input>
+
+        <br><br>
+
+        <paper-material elevation="2">
+
+          <paper-item>
+            <h4>Is {{details.FirstName}} a Primary Site Contact?</h4>
+          </paper-item>
+
+          <paper-checkbox id="primaryCheckBox" checked="{{details.role.Primary__c}}">
+            Primary
+          </paper-checkbox>
+
+        </paper-material>
+
+        <br><br>
+
+        <paper-material elevation="2">
+
+          <paper-item>
+            <h4>How should {{details.FirstName}} be notified of a D.R. Event?</h4>
+          </paper-item>
+
+          <paper-checkbox name="Home_Phone_Escalation__c" id="homeCheckBox" checked="{{_computeCheckBox('Home_Escalation__c', details.role)}}" on-change="_computeEscalation">
+            Home
+          </paper-checkbox>
+
+          <paper-checkbox name="Mobile_Escalation__c" id="mobileCheckBox" checked="{{_computeCheckBox('Mobile_Escalation__c', details.role)}}" on-change="_computeEscalation">
+            Mobile
+          </paper-checkbox>
+
+          <paper-checkbox name="SMS_Escalation__c" id="smsCheckBox" checked="{{_computeCheckBox('SMS_Escalation__c', details.role)}}" on-change="_computeEscalation">
+            Text
+          </paper-checkbox>
+
+          <paper-checkbox name="Email_Escalation__c" id="emailCheckBox" checked="{{_computeCheckBox('Email_Escalation__c', details.role)}}" on-change="_computeEscalation">
+            Email
+          </paper-checkbox>
+
+
+        </paper-material>
+
+        <br>
+
+      </form>
+    </div>
+
+    <br>
+
+
+  </template>
+
+  <script>
+
+    /*JS: polymer call */
+    Polymer({
+
+      /* JS: element prototype */
+
+      is: 'contact-details-card',
+
+      properties: {
+
+        /* Data Object */
+        details: {
+
+          type: Object,
+          notify: true,
+          value: function(){
+            return {};
+          }
+
+        },
+
+        displayName: {
+          type: String,
+          computed: '_computeContactName( details.FirstName, details.LastName )'
+        },
+
+        isTracked: {
+          type: Boolean,
+          value: false
+        }
+
+      },
+
+      observers: [
+        '_handleDetailsUpdate(details.*)'
+      ],
+
+
+      attached: function() {
+
+        this.$.primaryCheckBox.checked = this.details.role.Id ? this.details.role.Primary__c : false;
+        this.details['displayName'] = this.displayName;
+
+      },
+
+      validate: function() {
+
+        console.log('contact details card validating ... ');
+        var isValidContact = this.$.form.validate() && this.validateEscalation();
+        console.log('contact details card isValid = ' + isValidContact);
+
+        if(!isValidContact){
+          this.fire('invalid-card-alert', {card: 'Contact'});
+        }
+
+        return isValidContact;
+
+      },
+
+      validateEscalation: function(){
+
+        this.details.Email_Escalation__c = "1";
+        return true;
+
+      },
+
+      _computeEscalation: function(e){
+        console.log(' computeEscalation event de ' + JSON.stringify(e.detail));
+        console.log(' computeEscalation event tname ' + JSON.stringify(e.target.name));
+        console.log(' computeEscalation event tcheck ' + JSON.stringify(e.target.checked));
+    /*    var escalationVal = e.target.checked ? "1" : "Do Not Contact";
+        this.set(['details', e.target.name], escalationVal); */
+
+      },
+
+      _computeCheckBox: function( escalation ) {
+
+        if( this.details.role.Id ) return (this.details[escalation] == "1") ? true : false;
+
+      },
+
+      _computeContactName: function( first, last ){
+
+        var computedName = first + ' ' + last;
+
+        this.details.displayName = computedName;
+        this.notifyPath('details.displayName');
+
+        return computedName;
+
+      },
+
+      _handleDetailsUpdate: function(changeRecord) {
+        /*if(changeRecord){
+
+          if(!this.isTracked && (JSON.stringify(this.$.form.serialize()) !== "{}") ){
+            console.log('[OPB]-> Tracking progress of contact . . .' + JSON.stringify(this.$.form.serialize()));
+
+            // Sign up for tracking
+            this.fire('form-tracking-request', {card: 'contacts', schema: this.$.form.serialize()});
+            this.isTracked = true;
+
+          }
+        }*/
+      }
+
+    });
+
+  </script>
+</dom-module>

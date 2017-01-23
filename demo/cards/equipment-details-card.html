@@ -1,0 +1,183 @@
+<link rel="import" href="../elements.html">
+<dom-module id="equipment-details-card">
+  <template>
+
+    <style include="shared-styles"></style>
+
+    <!-- HTML: local dom -->
+    <div class="card">
+      <form is="iron-form" id="form" method="post" action="/portal/equipment">
+
+        <h2>{{details.Title}}</h2>
+
+        <paper-dropdown-menu name="record_type" label="Record Type" value="{{details.Record_Type}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item>recordtype 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-input name="meter_number" label="Meter Number" type=number value="{{details.Meter_Number}}" required></paper-input>
+        <paper-input name="prev_meter_number" label="Previous Meter Numbers" type=number value="{{details.Prev_Meter_Number}}" required></paper-input>
+        <paper-input name="utility_account_number" label="Utility Account Number" type=number value="{{details.Utility_Account_Number}}" required></paper-input>
+        <paper-input name="location" label="Location" value="{{details.Location}}" required></paper-input>
+        <paper-input name="equipment_name" label="Equipment Name" value="{{details.Equipment_Name}}" required></paper-input>
+
+        <paper-dropdown-menu name="meter_data_source" label="Meter Data Source" value="{{details.Meter_Data_Source}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item>meter data source 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-dropdown-menu name="utility_provider_account" label="Utility Provider Account" value="{{details.Utility_Provider_Account}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item>utility provider account 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-input name="generator_contact" label="Generator_Contact" value="{{details.Generator_Contact}}" required></paper-input>
+
+        <paper-dropdown-menu name="generator_type" label="Generator Type" value="{{details.Generator_Type}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item>GeneratorType 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-input name="installation_date" label="Installation Date" type=date value="{{details.Installation_Date}}" required></paper-input>
+
+        <paper-dropdown-menu name="make" label="Make" value="{{details.Make}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item>Make 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-input name="model" label="Model" value="{{details.Model}}" required></paper-input>
+
+        <paper-input name="rated_kw" label="Rated kW" type=number value="{{details.Rated_Kw}}" required></paper-input>
+        <paper-input name="serial_number" label="Serial Number" value="{{details.Serial_Number}}" required></paper-input>
+
+        <paper-dropdown-menu name="fuel_type" label="Fuel Type" value="{{details.Fuel_Type}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item>Fuel Type 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-input name="engine_serial_number" label="Engine Serial Number" value="{{details.Engine_Serial_Number}}" required></paper-input>
+        <paper-input name="max_engine_unit" label="Maximum Engine Rating Unit" value="{{details.Max_Engine_Unit}}" required></paper-input>
+        <paper-input name="max_engine_value" label="Maximum Engine Rating Value" value="{{details.Max_Engine_Value}}" required></paper-input>
+
+        <paper-dropdown-menu name="engine_make" label="Engine Make" value="{{details.Engine_Make}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item>Engine Make 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-dropdown-menu name="engine_model" label="Engine Model" value="{{details.Engine_Model}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item>Engine Model 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-input name="engine_manufacture_date" label="Engine Manufacture Date" type=date value="{{details.Engine_Manufacture_Date}}" required></paper-input>
+
+        <paper-dropdown-menu name="startup_type" label="Startup Type" value="{{details.Startup_Type}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item>Startup Type 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-dropdown-menu name="tier_rating" label="Tier Rating" value="{{details.Tier_Rating}}" required>
+          <paper-listbox class="dropdown-content">
+            <paper-item>Tier Rating 1</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+
+        <paper-checkbox id="participating">
+          Participating in DR?
+          <span class="subtitle">
+            Check this box to participate in Demand Response Events.
+          </span>
+        </paper-checkbox>
+
+        <br><br>
+
+        <vaadin-upload
+        target="/portal/attachment"
+        max-files="3"
+        accept="text/plain"
+        max-file-size="1000000">
+          <div class="drop-label">
+            <iron-icon icon="file-upload"></iron-icon>
+              Accepts up to 3PDF files, up to 1MB each
+            </div>
+        </vaadin-upload>
+
+      </form>
+    </div>
+
+    <br><br>
+
+
+  </template>
+
+  <script>
+
+    /*JS: polymer call */
+    Polymer({
+
+      /* JS: element prototype */
+
+      is: 'equipment-details-card',
+
+      properties: {
+
+        /* Set Properties */
+
+        /* Data Object */
+        details: {
+
+          type: Object,
+          notify: true
+
+        },
+
+        /* Whether Primary */
+        isPrimary: {
+
+          type: Boolean,
+          notify: true,
+          value: false
+
+        }
+
+      },
+
+      /* Set listeners */
+      listeners: {
+
+      },
+
+      /* Define functions */
+      ready: function() {
+
+
+      },
+
+      /* Submit Contact Data */
+      submit: function() {
+
+        this.$.form.submit();
+
+      },
+
+      _handlePrimaryChange: function(event) {
+
+        this.isPrimary = !this.isPrimary;
+
+        var primary = this.isPrimary;
+        this.submission = primary.toString();
+      }
+
+    });
+
+  </script>
+</dom-module>

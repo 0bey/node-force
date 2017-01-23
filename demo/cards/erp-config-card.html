@@ -1,0 +1,240 @@
+<!--================================->
+@license:
+
+  Copyright (c) 2016 EnerNOC DR-Dev
+
+<!-================================-->
+<link rel="import" href="../shared-styles.html">
+<link rel="import" href="../elements.html">
+<link rel="import" href="../../bower_components/Sortable/Sortable.html">
+
+<dom-module id="erp-config-card">
+  <template>
+    <style include="shared-styles">
+
+      :host {
+        display: block;
+        padding: 10px;
+      }
+
+      /* SORRY - CSS NEEDS SERIOUS CONDENSING! */
+
+      paper-textarea {
+        --paper-input-container-focus-color: var(--enoc-corporate-blue);
+      }
+
+      .erp-icon {
+        padding: 16px 16px;
+
+        --paper-fab-iron-icon: {
+          --iron-icon-height: 64px;
+          --iron-icon-width: 64px;
+        };
+      }
+
+      .erp-flex-container {
+        @apply(--layout-horizontal);
+      }
+
+      .load-item {
+        background: rgba(241,241,242, 0.75);
+        color: var(--enoc-corporate-blue);
+        margin: 1px;
+        padding: 10px 10px;
+      }
+
+      .sortable-ghost {
+        opacity:.6;
+      }
+
+      .load-container {
+        @apply(--layout-flex-4);
+      }
+
+      .button-container {
+        @apply(--layout-flex);
+        @apply(--layout-self-center);
+      }
+
+      .load-trash {
+        background: var(--enoc-product-red);
+      }
+
+      .load-add {
+        --paper-fab-background: var(--enoc-corporate-blue);
+      }
+
+      #included {
+        width: 100%;
+        height: 100%;
+      }
+
+      .trash-icon {
+        --iron-icon-fill-color : var(--enoc-product-light-gray);
+        --iron-icon-width : 64px;
+        --iron-icon-height : 64px;
+      }
+
+    </style>
+
+    <div class="card">
+      <h2>Create your Energy Reduction Plan (ERP)</h2>
+      <p>Your ERP is your guide to a Demand Response Event. It specifies the energy loads which you will curtail in order to meet your nomination goal.</p>
+    </div>
+
+    <div class="erp-flex-container">
+
+      <div class="card load-container">
+        <h4>Suggested Loads</h4>
+        <div id="pool">
+          <template is="dom-repeat" items="{{poolLoadData}}">
+            <div class="load-item">{{item.name}}</div>
+          </template>
+        </div>
+      </div>
+
+      <div class="card load-container">
+        <h4>Included in ERP</h4>
+        <div id="included">
+          <!-- Included items -->
+        </div>
+      </div>
+
+      <div class="card button-container load-trash">
+        <iron-icon id="trash" class="trash-icon" icon="delete"></iron-icon>
+      </div>
+
+    </div>
+
+    <div class="card">
+      <paper-textarea label="Your ERP" value="{{erpText}}"></paper-textarea>
+    </div>
+
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'erp-config-card',
+
+      properties: {
+
+        erpText: {
+          type: String,
+          notify: true
+        },
+
+        erpLoadData: {
+          type: Array,
+          notify: true,
+          value: function(){
+            return [];
+          }
+        },
+
+        poolLoadData: {
+          type: Array,
+          notify: true,
+          value: function(){
+            return [
+              {name: 'HVAC'},
+              {name: 'Pump'},
+              {name: 'Chiller'},
+              {name: 'Lighting'}
+            ];
+          }
+        }
+
+      },
+
+      observers: [
+        '_computeERPText(erpLoadData.splices)'
+      ],
+
+      attached: function(){
+
+        // Make included sortablejs container
+        var includedContainer = this.$.included;
+        Sortable.create(includedContainer,{
+          group: {
+            name: 'included',
+            put: ['pool'],
+          },
+
+          sort: true,
+
+          // element added to list
+          onAdd: function(e) {
+            console.log('Add -> ' + e.oldIndex + ', ' + e.newIndex);
+
+            // insert
+            this.splice('erpLoadData', e.newIndex, 0, {name: e.item.textContent});
+
+          }.bind(this),
+
+          // sorting changed
+          onUpdate: function(e) {
+            console.log('Update -> ' + e.oldIndex + ', ' + e.newIndex);
+
+            // swap
+            this.splice('erpLoadData',e.oldIndex,1);
+            this.splice('erpLoadData',e.newIndex,0,{name:e.item.textContent});
+
+          }.bind(this),
+
+          // element removed from list
+          onRemove: function(e) {
+            console.log('Remove -> '+ e.oldIndex + ', ' + e.newIndex );
+
+            // delete
+            this.splice('erpLoadData',e.oldIndex,1);
+
+          }.bind(this),
+
+          animation: 100
+        });
+
+        // Make excluded sortablejs container
+        var poolContainer = this.$.pool;
+        Sortable.create(poolContainer,{
+          group: {
+            name: 'pool',
+            pull: 'clone'
+          },
+          animation: 100
+        });
+
+        var trashContainer = this.$.trash;
+        Sortable.create(trashContainer,{
+          group: {
+            name: 'trash',
+            pull: false,
+            put: ['included']
+          },
+          animation: 100,
+          onAdd: function(e){
+            e.item.parentNode.removeChild(e.item);
+          }.bind(this)
+        });
+
+      },
+
+      _computeERPText: function(changeRecord){
+
+        if(changeRecord){
+
+          var erpLoadsAsText = "";
+
+          this.erpLoadData.forEach(function(element,index,array){
+            erpLoadsAsText = erpLoadsAsText + element.name + ',\n';
+          }.bind(this));
+
+          this.erpText = "To reduce your energy consumption for a Demand Response Event, \n 1. Receive notification from EnerNOC\n 2. Confirm phone & email notifications\n 3. Manually shut down the following equipment:\n " + erpLoadsAsText;
+
+        }
+
+      }
+
+    });
+  </script>
+</dom-module>

@@ -1,0 +1,246 @@
+<!--================================->
+@license:
+
+  Copyright (c) 2016 EnerNOC DR-Dev
+
+<!-================================-->
+
+<!-- Elements --> <link rel="import" href="elements.html">
+<!-- Style --> <link rel="import" href="shared-styles.html">
+
+<dom-module id="onboarding-progress-tabs">
+
+  <template>
+
+    <style include="shared-styles">
+
+      :host {
+        display: block;
+        padding: 10px;
+
+        --tab-complete-color: var(--enoc-product-green);
+        --tab-incomplete-color: var(--enoc-product-gold);
+        --tab-blank-color: var(--enoc-product-light-blue);
+
+      }
+
+      paper-tabs {
+        height: 100%;
+        width: 100%;
+        color: white;
+        background-color: var(--enoc-product-light-blue);
+        --paper-tabs-selection-bar-color: white;
+        --paper-tabs-container: {
+          @apply(--layout-center);
+        };
+      }
+
+      paper-tab.complete {
+        background-color: var(--tab-complete-color);
+      }
+
+      paper-tab.incomplete {
+        background-color: var(--tab-incomplete-color);
+      }
+
+      paper-tab.blank {
+        background-color: var(--tab-blank-color);
+      }
+
+    </style>
+
+    <!-- Form Tabs -->
+    <template is="dom-if" if="{{formKey}}">
+
+      <paper-tabs id="tabs"
+      attr-for-selected="name"
+      selected="{{currentFormSection}}"
+      fit-container
+      autoselect
+      autoselect-delay="500">
+
+        <paper-tab name="guide">Guide</paper-tab>
+        <paper-tab name="siteDetails">Site</paper-tab>
+        <paper-tab name="contacts">Contacts</paper-tab>
+        <paper-tab name="equipment">Equipment</paper-tab>
+        <paper-tab name="participation">Participation</paper-tab>
+
+      </paper-tabs>
+    </template>
+
+    <template is="dom-if" if="{{!formKey}}">
+      <paper-tabs id="homeTabs"
+      attr-for-selected="name"
+      selected="home"
+      scrollable
+      fit-container
+      autoselect
+      autoselect-delay="500">
+
+        <paper-tab name="home">{{accountName}}</paper-tab>
+
+      </paper-tabs>
+
+    </template>
+
+  </template>
+
+  <script>
+
+    Polymer({
+
+      is: 'onboarding-progress-tabs',
+
+      properties: {
+
+        formKey: {
+          type: String
+        },
+
+        formData: {
+          type: Array
+        },
+
+        progressStats: {
+          type: Object,
+          notify: true,
+          value: function() {
+            return {
+              overall:{completed:0,total:0}
+            };
+          }
+        },
+
+        progressSchema: {
+          type: Object
+        },
+
+        currentFormSection: {
+          type: String,
+          notify:true,
+          value: "guide"
+        },
+
+      },
+
+      observers: [
+        '_updateProgress(formData.*, progressSchema.*)',
+        '_computeProgressTabStyles(formKey)'
+      ],
+
+      _setTabColor(tabElement, tabProgress){
+
+        // clear styles
+        tabElement.classList.remove("complete","blank","incomplete");
+
+        // set styles
+        if( tabProgress.completed ){
+
+          var updatedClass = (tabProgress.completed === tabProgress.total) ? "complete" : "incomplete";
+          tabElement.classList.add(updatedClass);
+
+        }
+
+      },
+
+      _computeProgressTabStyles: function(formKey){
+
+        if( formKey ){
+
+          // compute progress of form
+          for(var section in this.progressSchema){
+            if(section != 'ignored'){
+
+              var selector = 'paper-tab[name='+section+']';
+              var tab = Polymer.dom(this.root).querySelector(selector);
+
+              this._setTabColor(tab, this.get(['progressStats', formKey, section]));
+
+            }
+          }
+          this.updateStyles();
+        }
+      },
+
+      _updateProgress: function ( formChangeRecord, schemaChangeRecord ) {
+
+        if((schemaChangeRecord || formChangeRecord) && this.progressSchema){
+
+          // set progress
+          this._computeFormProgress();
+
+
+          // update tab styles
+          this._computeProgressTabStyles(this.formKey);
+
+        }
+
+      },
+
+      _computeFormProgress: function() {
+
+        // check progress of each form
+        this.formData.forEach(function(element, index, array){
+
+          // initialize form progress
+          this.set(['progressStats', element.siteDetails.Id], { overall:{completed: 0, total: 0} } );
+
+          // check progress of each section
+          for( var section in this.progressSchema){
+
+            // compute when form section exists and has data
+            if(element[section]){
+
+              // initialize section progress
+              this.set(['progressStats', element.siteDetails.Id, section], {completed:0, total:0});
+
+              // compute section progress
+              this._computeFormSectionProgress(element.siteDetails.Id, index, section);
+
+            }
+
+          }
+
+        }.bind(this));
+      },
+
+      _computeFormSectionProgress: function( formId, formIndex, sectionId ){
+
+        var sectionData = this.get(['formData', formIndex, sectionId]);
+
+        var sectionStats = this.get(['progressStats', formId, sectionId]);
+
+        var sectionSchema = this.progressSchema[sectionId];
+
+
+        if(sectionData instanceof Array){ // section is array of objects
+
+          sectionData.forEach(function(element,index,array){
+
+            this._computeFormObjectProgress(element, sectionStats, sectionSchema);
+
+          }.bind(this));
+
+        }else{ // sectionData is single object
+
+          this._computeFormObjectProgress(sectionData, sectionStats, sectionSchema);
+
+        }
+
+      },
+
+      _computeFormObjectProgress( sectionDataObject, sectionStats, sectionSchema ){
+        for( var field in sectionSchema ){
+
+          sectionStats.total += 1;
+          sectionStats.completed += (sectionDataObject[field] || (this.progressSchema.ignored.indexOf(field) > -1)) ? 1 : 0;
+
+        }
+
+      }
+
+    });
+
+  </script>
+
+</dom-module>
